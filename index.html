@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="it" class="h-full bg-slate-950 text-slate-100 select-none">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTD Flow Pro - macOS Desktop Edition</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            mac: {
+              bg: '#1E1E1E',
+              sidebar: '#252526',
+              card: '#2D2D30',
+              cardHover: '#3E3E42',
+              accent: '#0A84FF',
+              green: '#30D158',
+              orange: '#FF9F0A',
+              purple: '#BF5AF2',
+              red: '#FF453A',
+              yellow: '#FFD60A',
+              teal: '#64D2FF',
+              gray: '#8E8E93',
+              separator: 'rgba(255, 255, 255, 0.12)'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+
+    .mac-window {
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 1px 1px rgba(255, 255, 255, 0.15);
+    }
+
+    .mac-glass {
+      background: rgba(37, 37, 38, 0.85);
+      backdrop-filter: blur(20px);
+    }
+
+    .sidebar-item-active {
+      background: rgba(10, 132, 255, 0.2);
+      color: #0A84FF;
+      font-weight: 600;
+      border-left: 3px solid #0A84FF;
+    }
+  </style>
+</head>
+<body class="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col overflow-hidden font-sans">
+
+  <!-- macOS System Top Menu Bar -->
+  <header class="h-7 bg-black/80 backdrop-blur-md border-b border-white/10 px-3 flex items-center justify-between text-xs text-slate-300 shrink-0 z-50">
+    <div class="flex items-center gap-3">
+      <span class="font-bold text-white flex items-center gap-1.5 cursor-pointer">
+        <i data-lucide="apple" class="w-3.5 h-3.5"></i> GTD Flow Pro
+      </span>
+      <span class="text-[11px] hover:text-white cursor-pointer" onclick="switchMainSection('inbox')">Archivio</span>
+      <span class="text-[11px] hover:text-white cursor-pointer" onclick="openQuickAddModal()">Nuova Nota</span>
+      <span class="text-[11px] hover:text-white cursor-pointer" onclick="openShareSheetReceiver()">Ricevi da iPhone</span>
+      <span class="text-[11px] hover:text-white cursor-pointer" onclick="switchMainSection('settings')">Impostazioni</span>
+    </div>
+
+    <div class="flex items-center gap-3 text-[11px]">
+      <div id="sync-status-pill" class="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 text-[10px]">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>iPhone Sync: Attivo</span>
+      </div>
+      <button onclick="pasteFromClipboard()" class="hover:text-white flex items-center gap-1 text-[11px] bg-white/5 hover:bg-white/10 px-2 py-0.5 rounded border border-white/10">
+        <i data-lucide="clipboard-paste" class="w-3 h-3 text-mac-teal"></i> Incolla Appunti
+      </button>
+      <span id="mac-clock" class="font-mono text-slate-200 font-semibold">17:13</span>
+    </div>
+  </header>
+
+  <!-- Main macOS Desktop Window Container -->
+  <div class="flex-1 p-2 sm:p-3 md:p-4 flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-slate-950 to-black">
+    <div class="w-full max-w-[1380px] h-full max-h-[860px] bg-mac-bg rounded-xl border border-white/15 mac-window flex flex-col overflow-hidden relative">
+
+      <!-- Window Title Bar & Toolbar -->
+      <div class="h-11 bg-mac-sidebar border-b border-mac-separator px-4 flex items-center justify-between shrink-0 z-40">
+        <!-- macOS Traffic Lights -->
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 rounded-full bg-mac-red border border-red-600/50 cursor-pointer hover:opacity-80" title="Chiudi"></div>
+          <div class="w-3 h-3 rounded-full bg-mac-yellow border border-yellow-600/50 cursor-pointer hover:opacity-80" title="Minimizza"></div>
+          <div class="w-3 h-3 rounded-full bg-mac-green border border-green-600/50 cursor-pointer hover:opacity-80" title="Ingrandisci"></div>
+          <span class="ml-4 text-xs font-semibold text-slate-400" id="current-view-title">Inbox — Tutti gli elementi</span>
+        </div>
+
+        <!-- Global Search & Actions Toolbar -->
+        <div class="flex items-center gap-2">
+          <div class="relative w-56">
+            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-2 text-mac-gray"></i>
+            <input type="text" id="global-search-input" oninput="renderActiveView()" placeholder="Cerca in tutte le liste..." class="w-full bg-black/40 border border-mac-separator rounded-lg pl-8 pr-3 py-1 text-xs text-white placeholder-mac-gray focus:outline-none focus:border-mac-accent">
+          </div>
+
+          <button onclick="openShareSheetReceiver()" class="bg-mac-card hover:bg-mac-cardHover text-mac-teal border border-mac-separator px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all">
+            <i data-lucide="iphone" class="w-3.5 h-3.5"></i> Ricevi da iPhone
+          </button>
+
+          <button onclick="openQuickAddModal()" class="bg-mac-accent hover:bg-blue-600 text-white border border-blue-400/30 px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all">
+            <i data-lucide="plus" class="w-4 h-4"></i> Nuova Nota
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Master-Detail Workspace -->
+      <div class="flex-1 flex overflow-hidden">
+
+        <!-- Sidebar Navigation (Left Panel) -->
+        <aside class="w-56 bg-mac-sidebar border-r border-mac-separator flex flex-col justify-between shrink-0 p-2 text-xs">
+          <div class="space-y-4">
+            <!-- Primary Lists -->
+            <div>
+              <p class="text-[10px] font-bold text-mac-gray uppercase tracking-wider px-2 py-1">GTD Workflow</p>
+              <nav class="space-y-0.5">
+                <button onclick="switchMainSection('inbox')" id="nav-inbox" class="sidebar-item-active w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/5 transition-all text-left">
+                  <span class="flex items-center gap-2"><i data-lucide="inbox" class="w-4 h-4 text-mac-accent"></i> Inbox</span>
+                  <span id="badge-inbox" class="px-1.5 py-0.2 rounded-full bg-mac-accent/20 text-mac-accent text-[10px] font-mono font-bold">0</span>
+                </button>
+
+                <button onclick="switchMainSection('actions')" id="nav-actions" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/5 text-slate-300 transition-all text-left">
+                  <span class="flex items-center gap-2"><i data-lucide="zap" class="w-4 h-4 text-mac-green"></i> Prossime Azioni</span>
+                  <span id="badge-actions" class="px-1.5 py-0.2 rounded-full bg-mac-green/20 text-mac-green text-[10px] font-mono font-bold">0</span>
+                </button>
+
+                <button onclick="switchMainSection('projects')" id="nav-projects" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/5 text-slate-300 transition-all text-left">
+                  <span class="flex items-center gap-2"><i data-lucide="folder-kanban" class="w-4 h-4 text-mac-purple"></i> Progetti</span>
+                  <span id="badge-projects" class="px-1.5 py-0.2 rounded-full bg-mac-purple/20 text-mac-purple text-[10px] font-mono font-bold">0</span>
+                </button>
+
+                <button onclick="switchMainSection('waiting')" id="nav-waiting" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/5 text-slate-300 transition-all text-left">
+                  <span class="flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-mac-orange"></i> In Attesa</span>
+                  <span id="badge-waiting" class="px-1.5 py-0.2 rounded-full bg-mac-orange/20 text-mac-orange text-[10px] font-mono font-bold">0</span>
+                </button>
+
+                <button onclick="switchMainSection('someday')" id="nav-someday" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/5 text-slate-300 transition-all text-left">
+                  <span class="flex items-center gap-2"><i data-lucide="archive" class="w-4 h-4 text-mac-teal"></i> Someday / Forse</span>
+                  <span id="badge-someday" class="px-1.5 py-0.2 rounded-full bg-mac-teal/20 text-mac-teal text-[10px] font-mono font-bold">0</span>
+                </button>
+
+                <button onclick="switchMainSection('reference')" id="nav-reference" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/5 text-slate-300 transition-all text-left">
+                  <span class="flex items-center gap-2"><i data-lucide="book-open" class="w-4 h-4 text-mac-yellow"></i> Riferimenti</span>
+                  <span id="badge-reference" class="px-1.5 py-0.2 rounded-full bg-mac-yellow/20 text-mac-yellow text-[10px] font-mono font-bold">0</span>
+                </button>
+              </nav>
+            </div>
+
+            <!-- Context Quick Filters -->
+            <div>
+              <p class="text-[10px] font-bold text-mac-gray uppercase tracking-wider px-2 py-1">Filtri Contesto GTD</p>
+              <div class="space-y-0.5" id="sidebar-context-filters">
+                <button onclick="setContextFilter('@Computer')" class="w-full flex items-center justify-between px-2.5 py-1 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-[11px]">
+                  <span>💻 @Computer</span>
+                  <span class="font-mono text-[9px] text-mac-gray" id="cnt-ctx-computer">0</span>
+                </button>
+                <button onclick="setContextFilter('@Ufficio')" class="w-full flex items-center justify-between px-2.5 py-1 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-[11px]">
+                  <span>🏢 @Ufficio</span>
+                  <span class="font-mono text-[9px] text-mac-gray" id="cnt-ctx-ufficio">0</span>
+                </button>
+                <button onclick="setContextFilter('@Telefono')" class="w-full flex items-center justify-between px-2.5 py-1 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-[11px]">
+                  <span>📞 @Telefono</span>
+                  <span class="font-mono text-[9px] text-mac-gray" id="cnt-ctx-telefono">0</span>
+                </button>
+                <button onclick="setContextFilter('@InGiro')" class="w-full flex items-center justify-between px-2.5 py-1 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-[11px]">
+                  <span>🚗 @InGiro</span>
+                  <span class="font-mono text-[9px] text-mac-gray" id="cnt-ctx-ingiro">0</span>
+                </button>
+                <button onclick="setContextFilter('@Casa')" class="w-full flex items-center justify-between px-2.5 py-1 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-[11px]">
+                  <span>🏠 @Casa</span>
+                  <span class="font-mono text-[9px] text-mac-gray" id="cnt-ctx-casa">0</span>
+                </button>
+                <button onclick="setContextFilter('@Email')" class="w-full flex items-center justify-between px-2.5 py-1 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-[11px]">
+                  <span>✉️ @Email</span>
+                  <span class="font-mono text-[9px] text-mac-gray" id="cnt-ctx-email">0</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Sidebar Footer -->
+          <div class="border-t border-mac-separator pt-2 space-y-1">
+            <button onclick="switchMainSection('settings')" id="nav-settings" class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-all text-left">
+              <i data-lucide="settings" class="w-4 h-4"></i> Impostazioni & Sync
+            </button>
+            <div class="px-2.5 text-[9px] text-mac-gray flex items-center justify-between">
+              <span>macOS 13" Optimized</span>
+              <span>v4.2</span>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Center Workspace Content Area -->
+        <main class="flex-1 bg-mac-bg flex flex-col overflow-hidden relative p-4 space-y-4">
+          
+          <!-- Filter Banner Header -->
+          <div id="filter-banner" class="hidden bg-mac-card border border-mac-separator p-2.5 rounded-xl flex items-center justify-between text-xs">
+            <span class="text-mac-teal font-semibold flex items-center gap-1.5">
+              <i data-lucide="filter" class="w-4 h-4"></i> Filtro attivo: <span id="active-filter-label" class="font-bold text-white">@Computer</span>
+            </span>
+            <button onclick="clearContextFilter()" class="text-mac-gray hover:text-white underline text-[11px]">Rimuovi Filtro</button>
+          </div>
+
+          <!-- View 1: Inbox -->
+          <section id="view-inbox" class="flex-1 flex flex-col overflow-hidden space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-base font-bold text-white flex items-center gap-2">
+                  <i data-lucide="inbox" class="w-5 h-5 text-mac-accent"></i> Inbox — Da Chiarire
+                </h2>
+                <p class="text-xs text-mac-gray">Raccogli tutte le idee, email, note ed appunti inviati da iPhone.</p>
+              </div>
+              <button onclick="pasteFromClipboard()" class="bg-mac-card hover:bg-mac-cardHover text-mac-teal border border-mac-separator px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5">
+                <i data-lucide="clipboard" class="w-4 h-4"></i> Incolla dagli Appunti
+              </button>
+            </div>
+
+            <div id="inbox-list" class="flex-1 overflow-y-auto space-y-2 pr-1">
+              <!-- Rendered dynamically -->
+            </div>
+          </section>
+
+          <!-- View 2: Next Actions -->
+          <section id="view-actions" class="hidden flex-1 flex flex-col overflow-hidden space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-base font-bold text-white flex items-center gap-2">
+                  <i data-lucide="zap" class="w-5 h-5 text-mac-green"></i> Prossime Azioni
+                </h2>
+                <p class="text-xs text-mac-gray">Attività fisiche concrete pronte da eseguire per contesto.</p>
+              </div>
+            </div>
+
+            <div id="actions-list" class="flex-1 overflow-y-auto space-y-2 pr-1">
+              <!-- Rendered dynamically -->
+            </div>
+          </section>
+
+          <!-- View 3: Projects -->
+          <section id="view-projects" class="hidden flex-1 flex flex-col overflow-hidden space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-base font-bold text-white flex items-center gap-2">
+                  <i data-lucide="folder-kanban" class="w-5 h-5 text-mac-purple"></i> Progetti Multi-Step
+                </h2>
+                <p class="text-xs text-mac-gray">Risultati che richiedono più di una singola azione per essere completati.</p>
+              </div>
+              <button onclick="promptCreateProject()" class="bg-mac-purple/20 hover:bg-mac-purple/30 text-mac-purple border border-mac-purple/30 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                + Nuovo Progetto
+              </button>
+            </div>
+
+            <div id="projects-list" class="flex-1 overflow-y-auto space-y-3 pr-1">
+              <!-- Rendered dynamically -->
+            </div>
+          </section>
+
+          <!-- View 4: Waiting For -->
+          <section id="view-waiting" class="hidden flex-1 flex flex-col overflow-hidden space-y-3">
+            <div>
+              <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="clock" class="w-5 h-5 text-mac-orange"></i> In Attesa (Waiting For)
+              </h2>
+              <p class="text-xs text-mac-gray">Incarichi delegati ad altri o riscontri attesi da terzi.</p>
+            </div>
+
+            <div id="waiting-list" class="flex-1 overflow-y-auto space-y-2 pr-1">
+              <!-- Rendered dynamically -->
+            </div>
+          </section>
+
+          <!-- View 5: Someday / Maybe -->
+          <section id="view-someday" class="hidden flex-1 flex flex-col overflow-hidden space-y-3">
+            <div>
+              <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="archive" class="w-5 h-5 text-mac-teal"></i> Un Giorno / Forse (Someday)
+              </h2>
+              <p class="text-xs text-mac-gray">Progetti o idee senza priorità immediata da riesaminare periodicamente.</p>
+            </div>
+
+            <div id="someday-list" class="flex-1 overflow-y-auto space-y-2 pr-1">
+              <!-- Rendered dynamically -->
+            </div>
+          </section>
+
+          <!-- View 6: References -->
+          <section id="view-reference" class="hidden flex-1 flex flex-col overflow-hidden space-y-3">
+            <div>
+              <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="book-open" class="w-5 h-5 text-mac-yellow"></i> Riferimenti & Materiale
+              </h2>
+              <p class="text-xs text-mac-gray">Informazioni utili, documenti, guide e note senza azione associata.</p>
+            </div>
+
+            <div id="reference-list" class="flex-1 overflow-y-auto space-y-2 pr-1">
+              <!-- Rendered dynamically -->
+            </div>
+          </section>
+
+          <!-- View 7: Settings & Data Management -->
+          <section id="view-settings" class="hidden flex-1 flex flex-col overflow-y-auto space-y-4 pr-1">
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <i data-lucide="settings" class="w-5 h-5 text-mac-teal"></i> Impostazioni & Ingestion Engine
+            </h2>
+
+            <!-- Shortcuts Integration Panel -->
+            <div class="bg-mac-card border border-mac-separator rounded-xl p-4 space-y-3">
+              <h3 class="text-xs font-bold text-white flex items-center gap-2">
+                <i data-lucide="iphone" class="w-4 h-4 text-mac-teal"></i> Integrazione iOS Comandi Rapidi (Shortcuts)
+              </h3>
+              <p class="text-xs text-mac-gray">
+                Puoi inviare note, link o selezioni di testo direttamente dal tuo iPhone configurando un **Comando Rapido (Apple Shortcut)**:
+              </p>
+
+              <div class="bg-black/50 p-3 rounded-lg border border-mac-separator space-y-2 text-xs font-mono">
+                <p class="text-mac-teal font-bold">URL Scheme per iPhone:</p>
+                <div class="p-2 bg-mac-bg rounded border border-mac-separator text-mac-yellow break-all text-[11px]" id="mac-shortcut-url">
+                  https://app.gtd.local/?action=share&text=[Input]
+                </div>
+                <button onclick="copyShortcutURL()" class="bg-mac-accent/20 text-mac-accent border border-mac-accent/30 px-3 py-1 rounded font-sans font-bold text-xs">
+                  Copia Struttura URL per Comandi Rapidi
+                </button>
+              </div>
+            </div>
+
+            <!-- Backup & Data Controls -->
+            <div class="bg-mac-card border border-mac-separator rounded-xl p-4 space-y-3">
+              <h3 class="text-xs font-bold text-white flex items-center gap-2">
+                <i data-lucide="database" class="w-4 h-4 text-mac-green"></i> Gestione Dati Locali
+              </h3>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <button onclick="exportJSONBackup()" class="bg-mac-cardHover hover:bg-slate-700 text-white border border-mac-separator p-3 rounded-xl text-xs font-semibold flex flex-col items-center justify-center gap-1.5">
+                  <i data-lucide="download" class="w-5 h-5 text-mac-green"></i>
+                  <span>Esporta Backup JSON</span>
+                </button>
+
+                <label class="bg-mac-cardHover hover:bg-slate-700 text-white border border-mac-separator p-3 rounded-xl text-xs font-semibold flex flex-col items-center justify-center gap-1.5 cursor-pointer">
+                  <i data-lucide="upload" class="w-5 h-5 text-mac-teal"></i>
+                  <span>Importa Backup JSON</span>
+                  <input type="file" accept=".json" class="hidden" onchange="importJSONBackup(event)">
+                </label>
+
+                <button onclick="resetAllData()" class="bg-mac-red/10 hover:bg-mac-red/20 text-mac-red border border-mac-red/30 p-3 rounded-xl text-xs font-semibold flex flex-col items-center justify-center gap-1.5">
+                  <i data-lucide="trash-2" class="w-5 h-5"></i>
+                  <span>Reset Completo (Clean)</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 1: Quick Add Note / Item -->
+  <div id="modal-quick-add" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-mac-card border border-mac-separator w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-mac-separator pb-3">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="plus-circle" class="w-4 h-4 text-mac-accent"></i> Nuova Nota nell'Inbox
+        </h3>
+        <button onclick="closeQuickAddModal()" class="text-mac-gray hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <div class="space-y-3">
+        <input type="text" id="add-item-title" placeholder="Cosa hai in mente?" class="w-full bg-black/50 border border-mac-separator rounded-xl px-3 py-2 text-xs text-white placeholder-mac-gray focus:outline-none focus:border-mac-accent">
+        <textarea id="add-item-details" rows="3" placeholder="Dettagli, link o note aggiuntive..." class="w-full bg-black/50 border border-mac-separator rounded-xl px-3 py-2 text-xs text-white placeholder-mac-gray focus:outline-none focus:border-mac-accent resize-none"></textarea>
+
+        <div class="flex items-center justify-between">
+          <select id="add-item-context" class="bg-black/50 border border-mac-separator rounded-xl px-3 py-1.5 text-xs text-slate-200">
+            <option value="@Computer">@Computer</option>
+            <option value="@Ufficio">@Ufficio</option>
+            <option value="@Telefono">@Telefono</option>
+            <option value="@InGiro">@InGiro</option>
+            <option value="@Casa">@Casa</option>
+            <option value="@Email">@Email</option>
+          </select>
+
+          <button onclick="saveQuickAddInboxItem()" class="bg-mac-accent hover:bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md">
+            Aggiungi all'Inbox
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Articulated David Allen GTD Clarify Wizard -->
+  <div id="modal-clarify-wizard" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-mac-card border border-mac-separator w-full max-w-lg rounded-2xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-mac-separator pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-mac-orange/20 text-mac-orange flex items-center justify-center font-bold">
+            <i data-lucide="workflow" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-xs font-bold text-white">Chiarisci GTD (David Allen)</h3>
+            <p class="text-[11px] text-mac-gray" id="clarify-sub">Elaborazione Guidata</p>
+          </div>
+        </div>
+        <button onclick="closeClarifyWizard()" class="text-mac-gray hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <div id="clarify-wizard-body" class="space-y-4">
+        <!-- Dynamic wizard steps -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Universal macOS Edit Inspector Sheet -->
+  <div id="modal-edit-sheet" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-mac-card border border-mac-separator w-full max-w-lg rounded-2xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-mac-separator pb-2">
+        <h3 class="text-xs font-bold text-white flex items-center gap-2">
+          <i data-lucide="edit-3" class="w-4 h-4 text-mac-accent"></i> Modifica Elemento GTD
+        </h3>
+        <button onclick="closeEditModal()" class="text-mac-gray hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <input type="hidden" id="edit-item-id">
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="text-[10px] text-mac-gray font-semibold">Titolo Azione / Nota:</label>
+          <input type="text" id="edit-item-title" class="w-full bg-black/60 border border-mac-separator rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-mac-accent">
+        </div>
+
+        <div>
+          <label class="text-[10px] text-mac-gray font-semibold">Dettagli / Note aggiuntive:</label>
+          <textarea id="edit-item-details" rows="3" class="w-full bg-black/60 border border-mac-separator rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-mac-accent resize-none"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[10px] text-mac-gray font-semibold">Categoria GTD:</label>
+            <select id="edit-item-category" class="w-full bg-black/60 border border-mac-separator rounded-xl p-2 text-xs text-white">
+              <option value="inbox">Inbox (In Arrivo)</option>
+              <option value="next">Prossime Azioni</option>
+              <option value="waiting">In Attesa</option>
+              <option value="someday">Un Giorno / Forse</option>
+              <option value="reference">Riferimento</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-[10px] text-mac-gray font-semibold">Contesto:</label>
+            <select id="edit-item-context" class="w-full bg-black/60 border border-mac-separator rounded-xl p-2 text-xs text-white">
+              <option value="@Computer">@Computer</option>
+              <option value="@Ufficio">@Ufficio</option>
+              <option value="@Telefono">@Telefono</option>
+              <option value="@InGiro">@InGiro</option>
+              <option value="@Casa">@Casa</option>
+              <option value="@Email">@Email</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[10px] text-mac-gray font-semibold">Progetto Associato:</label>
+            <select id="edit-item-project" class="w-full bg-black/60 border border-mac-separator rounded-xl p-2 text-xs text-white">
+              <option value="">Nessun Progetto</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-[10px] text-mac-gray font-semibold">Delegato a (In Attesa):</label>
+            <input type="text" id="edit-item-delegated" placeholder="Nome persona..." class="w-full bg-black/60 border border-mac-separator rounded-xl p-2 text-xs text-white">
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-mac-separator">
+        <button onclick="reClarifyFromEditModal()" class="bg-mac-cardHover border border-mac-separator text-mac-orange font-bold text-xs px-3 py-2 rounded-xl flex items-center gap-1.5">
+          <i data-lucide="workflow" class="w-3.5 h-3.5"></i> Rilavora con GTD
+        </button>
+
+        <button onclick="saveItemEdits()" class="bg-mac-accent hover:bg-blue-600 text-white font-bold px-5 py-2 rounded-xl text-xs shadow-md">
+          Salva Modifiche
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: Simulated iPhone Share Receiver Modal -->
+  <div id="modal-share-receiver" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-mac-card border border-mac-separator w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-mac-separator pb-3">
+        <h3 class="text-xs font-bold text-white flex items-center gap-2">
+          <i data-lucide="iphone" class="w-4 h-4 text-mac-teal"></i> Simula Ricezione da iPhone Share Sheet
+        </h3>
+        <button onclick="closeShareSheetReceiver()" class="text-mac-gray hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <div class="space-y-3">
+        <div class="flex gap-2">
+          <button onclick="presetSharePayload('safari')" class="flex-1 bg-mac-cardHover border border-mac-separator text-mac-accent text-[11px] py-1.5 rounded-lg font-semibold">Safari Link</button>
+          <button onclick="presetSharePayload('notes')" class="flex-1 bg-mac-cardHover border border-mac-separator text-mac-yellow text-[11px] py-1.5 rounded-lg font-semibold">Apple Note</button>
+          <button onclick="presetSharePayload('whatsapp')" class="flex-1 bg-mac-cardHover border border-mac-separator text-mac-green text-[11px] py-1.5 rounded-lg font-semibold">WhatsApp</button>
+        </div>
+
+        <div class="space-y-2 bg-black/50 p-3 rounded-xl border border-mac-separator text-xs">
+          <input type="text" id="share-recv-title" placeholder="Titolo nota condivisa" class="w-full bg-transparent font-bold text-white focus:outline-none">
+          <input type="text" id="share-recv-url" placeholder="URL (es. https://...)" class="w-full bg-transparent text-mac-teal font-mono text-[11px] focus:outline-none">
+          <textarea id="share-recv-text" rows="3" placeholder="Testo del messaggio o della nota..." class="w-full bg-transparent text-slate-300 focus:outline-none resize-none"></textarea>
+        </div>
+
+        <button onclick="ingestSharePayload()" class="w-full bg-mac-teal hover:bg-teal-400 text-black font-bold py-2.5 rounded-xl text-xs shadow-md">
+          Invia all'Inbox GTD
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'gtd_mac_desktop_app_v42';
+
+    // Application State (Clean Slate: Start Empty)
+    let appState = {
+      inbox: [],
+      categorized: [],
+      projects: []
+    };
+
+    let activeSection = 'inbox';
+    let activeContextFilter = null;
+
+    // Clarify Wizard State
+    let clarifyItem = null;
+    let clarifyStep = 1;
+    let currentActionTitle = '';
+    let timerInterval = null;
+    let timerSeconds = 120;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      updateClock();
+      setInterval(updateClock, 30000);
+      loadState();
+      processURLParams();
+      renderActiveView();
+
+      document.getElementById('mac-shortcut-url').textContent = `${window.location.origin}${window.location.pathname}?action=share&text=[Input]`;
+    });
+
+    function updateClock() {
+      const now = new Date();
+      const hrs = String(now.getHours()).padStart(2, '0');
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      document.getElementById('mac-clock').textContent = `${hrs}:${mins}`;
+    }
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          appState = JSON.parse(saved);
+          if (!appState.projects) appState.projects = [];
+        } else {
+          appState = { inbox: [], categorized: [], projects: [] };
+          saveState();
+        }
+      } catch (e) {
+        appState = { inbox: [], categorized: [], projects: [] };
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (e) {
+        console.error('Storage error:', e);
+      }
+    }
+
+    function processURLParams() {
+      const params = new URLSearchParams(window.location.search);
+      const action = params.get('action');
+      const text = params.get('text') || params.get('title');
+      const url = params.get('url');
+
+      if (action === 'share' || text || url) {
+        const newItem = {
+          id: 'gtd_' + Date.now(),
+          title: text || (url ? 'Link da iPhone' : 'Nota Condivisa'),
+          details: url || '',
+          context: '@Computer',
+          date: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+        };
+
+        appState.inbox.unshift(newItem);
+        saveState();
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+
+    async function pasteFromClipboard() {
+      try {
+        const clipText = await navigator.clipboard.readText();
+        if (!clipText) return;
+
+        const isUrl = clipText.startsWith('http://') || clipText.startsWith('https://');
+        let title = isUrl ? 'Link incollato dagli appunti' : clipText.slice(0, 50) + (clipText.length > 50 ? '...' : '');
+
+        if (isUrl) {
+          try {
+            title = `Link da ${new URL(clipText).hostname.replace('www.', '')}`;
+          } catch(e) {}
+        }
+
+        const newItem = {
+          id: 'gtd_' + Date.now(),
+          title: title,
+          details: clipText,
+          context: '@Computer',
+          date: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+        };
+
+        appState.inbox.unshift(newItem);
+        saveState();
+        renderActiveView();
+      } catch(e) {
+        alert("Impossibile leggere gli appunti. Usa il tasto Incolla nello Share Sheet.");
+      }
+    }
+
+    function switchMainSection(section) {
+      activeSection = section;
+
+      const titles = {
+        inbox: 'Inbox — Elementi da Chiarire',
+        actions: 'Prossime Azioni — Per Contesto',
+        projects: 'Progetti Multi-Step',
+        waiting: 'In Attesa (Waiting For)',
+        someday: 'Un Giorno / Forse (Someday)',
+        reference: 'Riferimenti & Materiale',
+        settings: 'Impostazioni & Sync iPhone'
+      };
+
+      document.getElementById('current-view-title').textContent = titles[section] || 'GTD Flow Pro';
+
+      ['inbox', 'actions', 'projects', 'waiting', 'someday', 'reference', 'settings'].forEach(sec => {
+        const view = document.getElementById(`view-${sec}`);
+        const navBtn = document.getElementById(`nav-${sec}`);
+
+        if (sec === section) {
+          view.classList.remove('hidden');
+          if (navBtn) navBtn.className = "sidebar-item-active w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/5 transition-all text-left font-bold";
+        } else {
+          view.classList.add('hidden');
+          if (navBtn) navBtn.className = "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/5 text-slate-300 transition-all text-left";
+        }
+      });
+
+      renderActiveView();
+    }
+
+    function setContextFilter(ctx) {
+      activeContextFilter = ctx;
+      document.getElementById('filter-banner').classList.remove('hidden');
+      document.getElementById('active-filter-label').textContent = ctx;
+      switchMainSection('actions');
+    }
+
+    function clearContextFilter() {
+      activeContextFilter = null;
+      document.getElementById('filter-banner').classList.add('hidden');
+      renderActiveView();
+    }
+
+    function renderActiveView() {
+      updateBadgesAndCounters();
+
+      const searchVal = (document.getElementById('global-search-input')?.value || '').toLowerCase();
+
+      if (activeSection === 'inbox') {
+        renderInboxView(searchVal);
+      } else if (activeSection === 'actions') {
+        renderActionsView(searchVal);
+      } else if (activeSection === 'projects') {
+        renderProjectsView(searchVal);
+      } else if (activeSection === 'waiting') {
+        renderWaitingView(searchVal);
+      } else if (activeSection === 'someday') {
+        renderSomedayView(searchVal);
+      } else if (activeSection === 'reference') {
+        renderReferenceView(searchVal);
+      }
+    }
+
+    function renderInboxView(searchVal) {
+      const container = document.getElementById('inbox-list');
+      let items = appState.inbox;
+
+      if (searchVal) {
+        items = items.filter(i => i.title.toLowerCase().includes(searchVal) || (i.details && i.details.toLowerCase().includes(searchVal)));
+      }
+
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div class="h-64 border border-dashed border-mac-separator rounded-2xl flex flex-col items-center justify-center text-center p-6 space-y-2 text-mac-gray">
+            <div class="w-12 h-12 rounded-full bg-mac-accent/10 text-mac-accent flex items-center justify-center">
+              <i data-lucide="inbox" class="w-6 h-6"></i>
+            </div>
+            <p class="text-sm font-bold text-white">Inbox Svuotata!</p>
+            <p class="text-xs max-w-sm">Nessun elemento da chiarire. Aggiungi note con + o ricevi dati da iPhone.</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      container.innerHTML = items.map(item => `
+        <div class="bg-mac-card hover:bg-mac-cardHover border border-mac-separator p-3.5 rounded-xl flex items-center justify-between gap-4 transition-all">
+          <div class="space-y-1 min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-mac-accent"></span>
+              <p class="text-xs font-bold text-white truncate">${escapeHtml(item.title)}</p>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-mac-sidebar text-mac-teal font-mono">${item.context || '@Computer'}</span>
+            </div>
+            ${item.details ? `<p class="text-[11px] text-slate-300 font-mono truncate pl-4">${escapeHtml(item.details)}</p>` : ''}
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0 text-xs">
+            <button onclick="openEditModal('${item.id}', 'inbox')" class="text-mac-teal hover:underline font-semibold px-2 py-1">Modifica</button>
+            <button onclick="deleteInboxItem('${item.id}')" class="text-mac-red hover:underline px-2 py-1">Elimina</button>
+            <button onclick="startClarifyWizard('${item.id}')" class="bg-mac-accent hover:bg-blue-600 text-white font-bold px-3 py-1.5 rounded-lg shadow">
+              Chiarisci →
+            </button>
+          </div>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function renderActionsView(searchVal) {
+      const container = document.getElementById('actions-list');
+      let items = appState.categorized.filter(i => i.category === 'next');
+
+      if (activeContextFilter) {
+        items = items.filter(i => i.context === activeContextFilter);
+      }
+
+      if (searchVal) {
+        items = items.filter(i => i.title.toLowerCase().includes(searchVal) || (i.details && i.details.toLowerCase().includes(searchVal)));
+      }
+
+      if (items.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-xs text-mac-gray border border-dashed border-mac-separator rounded-2xl">Nessuna Prossima Azione presente per questo filtro</div>`;
+        return;
+      }
+
+      container.innerHTML = items.map(item => `
+        <div class="bg-mac-card border border-mac-separator p-3.5 rounded-xl flex items-center justify-between gap-4">
+          <div class="space-y-1 min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-mac-green"></span>
+              <p class="text-xs font-bold text-white truncate">${escapeHtml(item.title)}</p>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-mac-sidebar text-mac-teal font-mono">${item.context || '@Computer'}</span>
+            </div>
+            ${item.details ? `<p class="text-[11px] text-mac-gray font-mono truncate pl-4">${escapeHtml(item.details)}</p>` : ''}
+          </div>
+
+          <div class="flex items-center gap-3 shrink-0 text-xs">
+            <span class="text-[11px] text-mac-purple font-semibold">${item.project ? '📂 ' + escapeHtml(item.project) : 'Azione Singola'}</span>
+            <button onclick="openEditModal('${item.id}', 'categorized')" class="text-mac-teal hover:underline font-semibold">Modifica</button>
+            <button onclick="completeCategorizedItem('${item.id}')" class="bg-mac-green/20 text-mac-green border border-mac-green/30 hover:bg-mac-green hover:text-black font-bold px-3 py-1 rounded-lg">
+              Completato ✓
+            </button>
+          </div>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function renderProjectsView(searchVal) {
+      const container = document.getElementById('projects-list');
+
+      if (appState.projects.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-xs text-mac-gray border border-dashed border-mac-separator rounded-2xl">Nessun Progetto Multi-Step. Crealo con + Nuovo Progetto o dal Wizard Chiarisci.</div>`;
+        return;
+      }
+
+      container.innerHTML = appState.projects.map(p => {
+        const associated = appState.categorized.filter(i => i.project === p.name);
+        return `
+          <div class="bg-mac-card border border-mac-separator rounded-xl p-4 space-y-2">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-bold text-sm text-mac-purple flex items-center gap-2">
+                  <i data-lucide="folder" class="w-4 h-4"></i> ${escapeHtml(p.name)}
+                </p>
+                <p class="text-[10px] text-mac-gray">Creato il ${p.date || 'Oggi'}</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono bg-mac-purple/20 text-mac-purple px-2.5 py-0.5 rounded-full font-bold">${associated.length} azioni</span>
+                <button onclick="deleteProject('${p.id}')" class="text-mac-red p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              </div>
+            </div>
+
+            ${associated.length > 0 ? `
+              <div class="bg-black/40 rounded-lg p-2.5 space-y-1 text-xs">
+                ${associated.map(a => `
+                  <div class="flex items-center justify-between py-1 border-b border-mac-separator/40 last:border-0">
+                    <span class="text-slate-200">${escapeHtml(a.title)}</span>
+                    <span class="text-mac-teal font-mono text-[10px]">${a.context}</span>
+                  </div>
+                `).join('')}
+              </div>
+            ` : '<p class="text-xs text-mac-gray italic">Nessuna azione attualmente collegata a questo progetto.</p>'}
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    function renderWaitingView(searchVal) {
+      const container = document.getElementById('waiting-list');
+      const items = appState.categorized.filter(i => i.category === 'waiting');
+
+      if (items.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-xs text-mac-gray border border-dashed border-mac-separator rounded-2xl">Nessun elemento in attesa o delegato.</div>`;
+        return;
+      }
+
+      container.innerHTML = items.map(item => `
+        <div class="bg-mac-card border border-mac-separator p-3.5 rounded-xl flex items-center justify-between gap-4">
+          <div class="space-y-1 min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-mac-orange"></span>
+              <p class="text-xs font-bold text-white truncate">${escapeHtml(item.title)}</p>
+              ${item.delegatedTo ? `<span class="text-[10px] px-2 py-0.5 rounded bg-mac-orange/20 text-mac-orange font-bold">👤 ${escapeHtml(item.delegatedTo)}</span>` : ''}
+            </div>
+            ${item.details ? `<p class="text-[11px] text-mac-gray font-mono truncate pl-4">${escapeHtml(item.details)}</p>` : ''}
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0 text-xs">
+            <button onclick="openEditModal('${item.id}', 'categorized')" class="text-mac-teal hover:underline font-semibold">Modifica</button>
+            <button onclick="completeCategorizedItem('${item.id}')" class="text-mac-red hover:underline">Rimuovi</button>
+          </div>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function renderSomedayView(searchVal) {
+      const container = document.getElementById('someday-list');
+      const items = appState.categorized.filter(i => i.category === 'someday');
+
+      if (items.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-xs text-mac-gray border border-dashed border-mac-separator rounded-2xl">Nessun elemento in Un Giorno / Forse.</div>`;
+        return;
+      }
+
+      container.innerHTML = items.map(item => `
+        <div class="bg-mac-card border border-mac-separator p-3.5 rounded-xl flex items-center justify-between gap-4">
+          <div class="space-y-1 min-w-0 flex-1">
+            <p class="text-xs font-bold text-white truncate">${escapeHtml(item.title)}</p>
+            ${item.details ? `<p class="text-[11px] text-mac-gray font-mono truncate">${escapeHtml(item.details)}</p>` : ''}
+          </div>
+
+          <div class="flex items-center gap-3 shrink-0 text-xs">
+            <button onclick="openEditModal('${item.id}', 'categorized')" class="text-mac-teal hover:underline font-semibold">Modifica</button>
+            <button onclick="startClarifyWizard('${item.id}', 'categorized')" class="text-mac-accent hover:underline font-bold">Rendi Attivo →</button>
+          </div>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function renderReferenceView(searchVal) {
+      const container = document.getElementById('reference-list');
+      const items = appState.categorized.filter(i => i.category === 'reference');
+
+      if (items.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-xs text-mac-gray border border-dashed border-mac-separator rounded-2xl">Nessun materiale di riferimento salvato.</div>`;
+        return;
+      }
+
+      container.innerHTML = items.map(item => `
+        <div class="bg-mac-card border border-mac-separator p-3.5 rounded-xl flex items-center justify-between gap-4">
+          <div class="space-y-1 min-w-0 flex-1">
+            <p class="text-xs font-bold text-white truncate">${escapeHtml(item.title)}</p>
+            ${item.details ? `<p class="text-[11px] text-mac-gray font-mono bg-black/40 p-2 rounded">${escapeHtml(item.details)}</p>` : ''}
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0 text-xs">
+            <button onclick="openEditModal('${item.id}', 'categorized')" class="text-mac-teal hover:underline font-semibold">Modifica</button>
+            <button onclick="completeCategorizedItem('${item.id}')" class="text-mac-red hover:underline">Elimina</button>
+          </div>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function updateBadgesAndCounters() {
+      const counts = {
+        inbox: appState.inbox.length,
+        actions: appState.categorized.filter(i => i.category === 'next').length,
+        projects: appState.projects.length,
+        waiting: appState.categorized.filter(i => i.category === 'waiting').length,
+        someday: appState.categorized.filter(i => i.category === 'someday').length,
+        reference: appState.categorized.filter(i => i.category === 'reference').length
+      };
+
+      Object.keys(counts).forEach(k => {
+        const badge = document.getElementById(`badge-${k}`);
+        if (badge) badge.textContent = counts[k];
+      });
+
+      // Context Counters
+      const nextActions = appState.categorized.filter(i => i.category === 'next');
+      const ctxs = ['@Computer', '@Ufficio', '@Telefono', '@InGiro', '@Casa', '@Email'];
+      ctxs.forEach(c => {
+        const key = c.replace('@', '').toLowerCase();
+        const cntElem = document.getElementById(`cnt-ctx-${key}`);
+        if (cntElem) cntElem.textContent = nextActions.filter(a => a.context === c).length;
+      });
+    }
+
+    // Edit Modal Operations
+    function openEditModal(itemId, source) {
+      let item = source === 'inbox' ? appState.inbox.find(i => i.id === itemId) : appState.categorized.find(i => i.id === itemId);
+      if (!item) return;
+
+      document.getElementById('edit-item-id').value = item.id;
+      document.getElementById('edit-item-title').value = item.title || '';
+      document.getElementById('edit-item-details').value = item.details || '';
+      document.getElementById('edit-item-category').value = item.category || (source === 'inbox' ? 'inbox' : 'next');
+      document.getElementById('edit-item-context').value = item.context || '@Computer';
+      document.getElementById('edit-item-delegated').value = item.delegatedTo || '';
+
+      const projSelect = document.getElementById('edit-item-project');
+      projSelect.innerHTML = '<option value="">Nessun Progetto</option>' + 
+        appState.projects.map(p => `<option value="${escapeHtml(p.name)}" ${item.project === p.name ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('');
+
+      document.getElementById('modal-edit-sheet').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('modal-edit-sheet').classList.add('hidden');
+    }
+
+    function saveItemEdits() {
+      const id = document.getElementById('edit-item-id').value;
+      const title = document.getElementById('edit-item-title').value.trim();
+      const details = document.getElementById('edit-item-details').value.trim();
+      const category = document.getElementById('edit-item-category').value;
+      const context = document.getElementById('edit-item-context').value;
+      const project = document.getElementById('edit-item-project').value;
+      const delegatedTo = document.getElementById('edit-item-delegated').value.trim();
+
+      if (!title) return;
+
+      let inboxIdx = appState.inbox.findIndex(i => i.id === id);
+      let catIdx = appState.categorized.findIndex(i => i.id === id);
+
+      let existing = inboxIdx !== -1 ? appState.inbox[inboxIdx] : appState.categorized[catIdx];
+
+      if (inboxIdx !== -1) appState.inbox.splice(inboxIdx, 1);
+      if (catIdx !== -1) appState.categorized.splice(catIdx, 1);
+
+      const updated = {
+        ...existing,
+        title, details, context,
+        project: project || null,
+        delegatedTo: delegatedTo || null,
+        category
+      };
+
+      if (category === 'inbox') {
+        appState.inbox.unshift(updated);
+      } else {
+        appState.categorized.unshift(updated);
+      }
+
+      saveState();
+      closeEditModal();
+      renderActiveView();
+    }
+
+    function reClarifyFromEditModal() {
+      const id = document.getElementById('edit-item-id').value;
+      closeEditModal();
+      startClarifyWizard(id);
+    }
+
+    // Clarify Wizard Operations
+    function startClarifyWizard(itemId, source = 'auto') {
+      let item = appState.inbox.find(i => i.id === itemId);
+      if (!item) item = appState.categorized.find(i => i.id === itemId);
+      if (!item) return;
+
+      clarifyItem = item;
+      clarifyStep = 1;
+      currentActionTitle = item.title;
+
+      document.getElementById('modal-clarify-wizard').classList.remove('hidden');
+      renderClarifyWizard();
+    }
+
+    function closeClarifyWizard() {
+      if (timerInterval) clearInterval(timerInterval);
+      document.getElementById('modal-clarify-wizard').classList.add('hidden');
+    }
+
+    function renderClarifyWizard() {
+      const body = document.getElementById('clarify-wizard-body');
+      document.getElementById('clarify-sub').textContent = `Oggetto: "${clarifyItem.title}"`;
+
+      if (clarifyStep === 1) {
+        body.innerHTML = `
+          <div class="bg-black/50 p-3 rounded-xl border border-mac-separator text-xs">
+            <span class="text-mac-gray">Nota corrente:</span>
+            <p class="font-bold text-white">${escapeHtml(clarifyItem.title)}</p>
+          </div>
+
+          <div class="space-y-3">
+            <p class="text-xs font-bold text-white">Step 1: È un'azione operativa che richiede un intervento?</p>
+            <div class="grid grid-cols-2 gap-3 text-xs">
+              <button onclick="clarifyStep = 1.5; renderClarifyWizard();" class="p-3 rounded-xl bg-mac-cardHover border border-mac-separator text-left hover:border-mac-red space-y-1">
+                <p class="font-bold text-mac-red">NO Action</p>
+                <p class="text-[10px] text-mac-gray">Elimina, Someday o Riferimento</p>
+              </button>
+
+              <button onclick="clarifyStep = 2; renderClarifyWizard();" class="p-3 rounded-xl bg-mac-cardHover border border-mac-separator text-left hover:border-mac-green space-y-1">
+                <p class="font-bold text-mac-green">SÌ Action</p>
+                <p class="text-[10px] text-mac-gray">Richiede attività fisica concreta</p>
+              </button>
+            </div>
+          </div>
+        `;
+      } else if (clarifyStep === 1.5) {
+        body.innerHTML = `
+          <div class="space-y-3 text-xs">
+            <p class="font-bold text-white">Scegli la destinazione non operativa:</p>
+            <button onclick="finalizeClarify('delete')" class="w-full p-2.5 rounded-xl bg-mac-red/10 border border-mac-red/30 text-mac-red font-bold text-left flex justify-between">
+              <span>Cestino / Elimina</span> <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+            <button onclick="finalizeClarify('someday')" class="w-full p-2.5 rounded-xl bg-mac-purple/10 border border-mac-purple/30 text-mac-purple font-bold text-left flex justify-between">
+              <span>Un giorno / Forse (Someday)</span> <i data-lucide="archive" class="w-4 h-4"></i>
+            </button>
+            <button onclick="finalizeClarify('reference')" class="w-full p-2.5 rounded-xl bg-mac-teal/10 border border-mac-teal/30 text-mac-teal font-bold text-left flex justify-between">
+              <span>Riferimento / Materiale</span> <i data-lucide="book-open" class="w-4 h-4"></i>
+            </button>
+          </div>
+        `;
+      } else if (clarifyStep === 2) {
+        body.innerHTML = `
+          <div class="space-y-3 text-xs">
+            <p class="font-bold text-white">Step 2: Definisci la PROSSIMA AZIONE FISICA concreta</p>
+            <input type="text" id="clarify-title-input" value="${escapeHtml(currentActionTitle)}" class="w-full bg-black/60 border border-mac-separator rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-mac-accent">
+            <button onclick="currentActionTitle = document.getElementById('clarify-title-input').value.trim(); clarifyStep = 3; renderClarifyWizard();" class="w-full bg-mac-accent text-white py-2 rounded-xl font-bold">Continua →</button>
+          </div>
+        `;
+      } else if (clarifyStep === 3) {
+        body.innerHTML = `
+          <div class="space-y-3 text-xs">
+            <p class="font-bold text-white">Step 3: Fa parte di un Progetto Multi-Step?</p>
+            <div class="grid grid-cols-2 gap-3">
+              <button onclick="setupProject(true)" class="p-3 rounded-xl bg-mac-cardHover border border-mac-separator text-left font-bold text-mac-purple">SÌ (Associa Progetto)</button>
+              <button onclick="setupProject(false)" class="p-3 rounded-xl bg-mac-cardHover border border-mac-separator text-left font-bold text-slate-300">NO (Azione Singola)</button>
+            </div>
+          </div>
+        `;
+      } else if (clarifyStep === 4) {
+        body.innerHTML = `
+          <div class="space-y-3 text-xs text-center">
+            <p class="font-bold text-white">Step 4: Regola dei 2 Minuti</p>
+            <div class="bg-black/60 p-4 rounded-xl border border-mac-separator space-y-3">
+              <div id="clarify-timer" class="text-2xl font-mono font-bold text-mac-green">02:00</div>
+              <div class="flex justify-center gap-2">
+                <button onclick="runTimer()" class="bg-mac-green text-black px-3 py-1.5 rounded-lg font-bold">Avvia Timer</button>
+                <button onclick="finalizeClarify('done_now')" class="bg-mac-accent text-white px-3 py-1.5 rounded-lg font-bold">Eseguito Ora ✓</button>
+              </div>
+            </div>
+            <button onclick="clarifyStep = 5; renderClarifyWizard();" class="w-full bg-mac-cardHover border border-mac-separator py-2 rounded-xl text-slate-300 font-bold">> 2 minuti → Delegare o Organizzare</button>
+          </div>
+        `;
+      } else if (clarifyStep === 5) {
+        body.innerHTML = `
+          <div class="space-y-3 text-xs">
+            <p class="font-bold text-white">Step 5: Delega o Assegna Contesto</p>
+            <div class="bg-mac-cardHover p-3 rounded-xl border border-mac-separator space-y-2">
+              <p class="font-bold text-mac-orange">Delega ad altri (In Attesa)</p>
+              <input type="text" id="delegated-input" placeholder="Nome della persona..." class="w-full bg-black/60 border border-mac-separator rounded p-2 text-white">
+              <button onclick="finalizeClarify('waiting')" class="w-full bg-mac-orange text-black font-bold py-1 rounded">Inserisci in In Attesa</button>
+            </div>
+
+            <div class="bg-mac-cardHover p-3 rounded-xl border border-mac-separator space-y-2">
+              <p class="font-bold text-mac-accent">Assegna Contesto Operativo</p>
+              <div class="flex gap-2">
+                <select id="ctx-select" class="bg-black/60 border border-mac-separator rounded p-2 text-white flex-1">
+                  <option value="@Computer">@Computer</option>
+                  <option value="@Ufficio">@Ufficio</option>
+                  <option value="@Telefono">@Telefono</option>
+                  <option value="@InGiro">@InGiro</option>
+                  <option value="@Casa">@Casa</option>
+                  <option value="@Email">@Email</option>
+                </select>
+                <button onclick="finalizeClarify('next')" class="bg-mac-accent text-white font-bold px-4 py-1 rounded">Salva</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      lucide.createIcons();
+    }
+
+    function setupProject(isProj) {
+      if (isProj) {
+        const projName = prompt("Nome del Progetto Multi-step:", currentActionTitle);
+        if (projName) {
+          if (!appState.projects.some(p => p.name === projName)) {
+            appState.projects.unshift({ id: 'p_' + Date.now(), name: projName, date: new Date().toLocaleDateString() });
+          }
+          clarifyItem.project = projName;
+        }
+      }
+      clarifyStep = 4;
+      renderClarifyWizard();
+    }
+
+    function runTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerSeconds = 120;
+      timerInterval = setInterval(() => {
+        timerSeconds--;
+        const m = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+        const s = String(timerSeconds % 60).padStart(2, '0');
+        const elem = document.getElementById('clarify-timer');
+        if (elem) elem.textContent = `${m}:${s}`;
+        if (timerSeconds <= 0) clearInterval(timerInterval);
+      }, 1000);
+    }
+
+    function finalizeClarify(dest) {
+      if (timerInterval) clearInterval(timerInterval);
+      if (!clarifyItem) return;
+
+      appState.inbox = appState.inbox.filter(i => i.id !== clarifyItem.id);
+      appState.categorized = appState.categorized.filter(i => i.id !== clarifyItem.id);
+
+      const title = currentActionTitle || clarifyItem.title;
+
+      if (dest === 'next') {
+        const ctx = document.getElementById('ctx-select')?.value || '@Computer';
+        appState.categorized.unshift({ ...clarifyItem, title, context: ctx, category: 'next' });
+      } else if (dest === 'waiting') {
+        const person = document.getElementById('delegated-input')?.value || title;
+        appState.categorized.unshift({ ...clarifyItem, title, delegatedTo: person, category: 'waiting' });
+      } else if (dest === 'someday') {
+        appState.categorized.unshift({ ...clarifyItem, title, category: 'someday' });
+      } else if (dest === 'reference') {
+        appState.categorized.unshift({ ...clarifyItem, title, category: 'reference' });
+      }
+
+      saveState();
+      closeClarifyWizard();
+      renderActiveView();
+    }
+
+    // Modal Helpers
+    function openQuickAddModal() { document.getElementById('modal-quick-add').classList.remove('hidden'); }
+    function closeQuickAddModal() { document.getElementById('modal-quick-add').classList.add('hidden'); }
+
+    function saveQuickAddInboxItem() {
+      const title = document.getElementById('add-item-title').value.trim();
+      const details = document.getElementById('add-item-details').value.trim();
+      const context = document.getElementById('add-item-context').value;
+
+      if (!title) return;
+
+      appState.inbox.unshift({
+        id: 'gtd_' + Date.now(),
+        title, details, context,
+        date: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+      });
+
+      saveState();
+      closeQuickAddModal();
+      renderActiveView();
+
+      document.getElementById('add-item-title').value = '';
+      document.getElementById('add-item-details').value = '';
+    }
+
+    function deleteInboxItem(id) {
+      appState.inbox = appState.inbox.filter(i => i.id !== id);
+      saveState();
+      renderActiveView();
+    }
+
+    function completeCategorizedItem(id) {
+      appState.categorized = appState.categorized.filter(i => i.id !== id);
+      saveState();
+      renderActiveView();
+    }
+
+    function promptCreateProject() {
+      const name = prompt("Inserisci nome del nuovo Progetto:");
+      if (name) {
+        appState.projects.unshift({ id: 'p_' + Date.now(), name: name.trim(), date: new Date().toLocaleDateString() });
+        saveState();
+        renderActiveView();
+      }
+    }
+
+    function deleteProject(id) {
+      appState.projects = appState.projects.filter(p => p.id !== id);
+      saveState();
+      renderActiveView();
+    }
+
+    // Share Receiver Sheet
+    function openShareSheetReceiver() { document.getElementById('modal-share-receiver').classList.remove('hidden'); presetSharePayload('safari'); }
+    function closeShareSheetReceiver() { document.getElementById('modal-share-receiver').classList.add('hidden'); }
+
+    function presetSharePayload(type) {
+      if (type === 'safari') {
+        document.getElementById('share-recv-title').value = "Guida al Metodo GTD su macOS";
+        document.getElementById('share-recv-url').value = "https://gettingthingsdone.com";
+        document.getElementById('share-recv-text').value = "Articolo sui 5 pilastri della produttività personale.";
+      } else if (type === 'notes') {
+        document.getElementById('share-recv-title').value = "Note Riunione Strategica";
+        document.getElementById('share-recv-url').value = "";
+        document.getElementById('share-recv-text').value = "Verificare budget Q4 e delegare stesura report a Marco.";
+      } else if (type === 'whatsapp') {
+        document.getElementById('share-recv-title').value = "Messaggio da Marco";
+        document.getElementById('share-recv-url').value = "";
+        document.getElementById('share-recv-text').value = "Invia la bozza dell'offerta entro giovedì.";
+      }
+    }
+
+    function ingestSharePayload() {
+      const title = document.getElementById('share-recv-title').value.trim();
+      const url = document.getElementById('share-recv-url').value.trim();
+      const text = document.getElementById('share-recv-text').value.trim();
+
+      if (!title && !url && !text) return;
+
+      appState.inbox.unshift({
+        id: 'gtd_' + Date.now(),
+        title: title || 'Nota condivisa',
+        details: [url, text].filter(Boolean).join('\n'),
+        context: '@Computer',
+        date: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+      });
+
+      saveState();
+      closeShareSheetReceiver();
+      renderActiveView();
+    }
+
+    // Data Management
+    function resetAllData() {
+      if (confirm("Sei sicuro di voler azzerare tutti i dati locali?")) {
+        appState = { inbox: [], categorized: [], projects: [] };
+        saveState();
+        renderActiveView();
+      }
+    }
+
+    function exportJSONBackup() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+      const anchor = document.createElement('a');
+      anchor.setAttribute("href", dataStr);
+      anchor.setAttribute("download", `gtd_mac_backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    }
+
+    function importJSONBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (data && Array.isArray(data.inbox)) {
+            appState = data;
+            saveState();
+            renderActiveView();
+          }
+        } catch(err) {
+          alert("Errore nell'importazione del backup JSON.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function copyShortcutURL() {
+      const url = document.getElementById('mac-shortcut-url').textContent.trim();
+      navigator.clipboard.writeText(url);
+      alert("URL Copiato!");
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+  </script>
+</body>
+</html>
